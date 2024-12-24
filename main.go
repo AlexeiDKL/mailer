@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"dkl.dklsa.mailer/iternal/handlers"
 	"dkl.dklsa.mailer/iternal/middleware"
 	sqlites "dkl.dklsa.mailer/iternal/storage/sqlite"
+
 	"github.com/gorilla/mux"
 )
 
@@ -36,7 +38,14 @@ func initAll() {
 }
 
 func main() {
-	initAll()
+	stor, err := sqlites.NewTablesCompany(`storage\storage.db`)
+	q := sqlites.CreateCompanyStorages(stor)
+
+	i, err := q.Save("ДКЛ")
+	fmt.Println(err)
+	fmt.Println(i)
+
+	// initAll()
 }
 
 func initServer(url string) {
@@ -69,7 +78,6 @@ func initConfig() *config.Config {
 }
 
 func initDB() {
-	sqlites.Hi()
 }
 
 // setupLogger - устанавливает логгер в зависимости от среды
