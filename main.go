@@ -38,10 +38,10 @@ func initAll() {
 }
 
 func main() {
-	stor, err := sqlites.NewTablesCompany(`storage\storage.db`)
+	stor, err := sqlites.CreateTable(`storage\storage.db`)
 	q := sqlites.CreateCompanyStorages(stor)
 
-	i, err := q.Save("ДКЛ")
+	i, err := q.Insert("ДКЛ")
 	fmt.Println(err)
 	fmt.Println(i)
 

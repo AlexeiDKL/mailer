@@ -19,9 +19,10 @@ const (
 )
 
 type Tables interface {
-	New() error
-	Get(id string) (Storage, error)
-	Save(Storage) error
+	CreateTable() error
+	Select(id string) (Storage, error)
+	Insert(Storage) error
 	Delete(Storage) error
+	Drop(Storage) error
 	Update(Storage) error
 }
