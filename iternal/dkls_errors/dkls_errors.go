@@ -17,3 +17,7 @@ func NotFoundError() error {
 func Wrap(op string, err error) error {
 	return fmt.Errorf("%s: %w", op, err)
 }
+
+func UnsupportedType(unType string) error {
+	return newError("unsupported type: " + unType)
+}

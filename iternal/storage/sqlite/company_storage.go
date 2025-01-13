@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	dklserrors "dkl.dklsa.mailer/iternal/dkls_errors"
+	"dkl.dklsa.mailer/iternal/storage"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type Pair struct {
-	Type  string
-	Value string
+type Company struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 type CompanyStorages struct {
@@ -22,8 +23,8 @@ func CreateCompanyStorages(db *Storage) *CompanyStorages {
 	return &CompanyStorages{db: db}
 }
 
-func CreateTable(storagePath string) (*Storage, error) {
-	const op = "storage.sqlite.New"
+func CreateCompanyTable(storagePath string) (*Storage, error) {
+	const op = "storage.sqlite.CreateCompanyTable"
 
 	db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
@@ -47,24 +48,44 @@ func CreateTable(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s CompanyStorages) Select(args Pair) (*sql.Rows, error) {
+func (s CompanyStorages) Select(args storage.Pair) (*Company, error) {
+	op := "storage.sqlite.select"
+	var result *sql.Rows
+	var err error
 	switch args.Type {
 	case "id":
-		return s.SelectWithId(args.Value)
+		result, err = s.selectWithId(args.Value.(string))
 	case "names":
-		return s.SelectWithNames(args.Value)
+		result, err = s.selectWithNames(args.Value.(string))
 	default:
-		return nil, fmt.Errorf("unsupported type: %s", args.Type)
+		return nil, dklserrors.UnsupportedType(args.Type)
 	}
+	if err != nil {
+		return nil, dklserrors.Wrap(op, err)
+	}
+
+	c := &Company{}
+
+	result.Next()
+
+	err = result.Scan(&c.ID, &c.Name)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("%s: no company found with id: %s", op, id)
+	}
+	return c, err
 }
 
-func (s CompanyStorages) SelectWithNames(companyNames string) (*sql.Rows, error) {
+func (s CompanyStorages) SelectAll() ([]Company, error) {
+	return nil, dklserrors.NotRelizedError()
+}
+
+func (s CompanyStorages) selectWithNames(companyNames string) (*sql.Rows, error) {
 	const op = "storage.sqlite.SelectWithNames"
 
 	return s.db.db.Query("SELECT id, name FROM company WHERE name =?", companyNames)
 }
 
-func (s CompanyStorages) SelectWithId(id string) (*sql.Rows, error) {
+func (s CompanyStorages) selectWithId(id string) (*sql.Rows, error) {
 	const op = "storage.sqlite.SelectWithId"
 
 	return s.db.db.Query("SELECT id, name FROM company WHERE id =?", id)
@@ -91,13 +112,13 @@ func (s CompanyStorages) Insert(companyName string) (int64, error) {
 	return id, nil
 }
 
-func (s CompanyStorages) Delete(args Pair) error {
+func (s CompanyStorages) Delete(args storage.Pair) error {
 	const os = "storage.sqlite.Delete"
 	switch args.Type {
 	case id:
-		return s.deleteById(args.Value)
+		return s.deleteById(args.Value.(string))
 	case name:
-		return s.deleteByNames(args.Value)
+		return s.deleteByNames(args.Value.(string))
 	default:
 		return fmt.Errorf("unsupported type: %s", args.Type)
 	}
@@ -167,13 +188,13 @@ func (s CompanyStorages) Drop() error {
 	return nil
 }
 
-func (s CompanyStorages) Update(arg Pair) error {
+func (s CompanyStorages) Update(arg storage.Pair) error {
 	const op = "storage.sqlite.UpdateCompany"
 	switch arg.Type {
 	case "id":
-		return s.updateById(arg.Type, arg.Value)
+		return s.updateById(arg.Type, arg.Value.(string))
 	case "name":
-		return s.updateByName(arg.Type, arg.Value)
+		return s.updateByName(arg.Type, arg.Value.(string))
 	default:
 		return fmt.Errorf("unsupported type: %s", arg.Type)
 	}

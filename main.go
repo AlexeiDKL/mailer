@@ -10,6 +10,7 @@ import (
 	"dkl.dklsa.mailer/iternal/config"
 	"dkl.dklsa.mailer/iternal/handlers"
 	"dkl.dklsa.mailer/iternal/middleware"
+	"dkl.dklsa.mailer/iternal/storage"
 	sqlites "dkl.dklsa.mailer/iternal/storage/sqlite"
 
 	"github.com/gorilla/mux"
@@ -38,12 +39,17 @@ func initAll() {
 }
 
 func main() {
-	stor, err := sqlites.CreateTable(`storage\storage.db`)
+	stor, err := sqlites.CreateCompanyTable(`storage\storage.db`)
 	q := sqlites.CreateCompanyStorages(stor)
 
-	i, err := q.Insert("ДКЛ")
+	t, err := q.Insert("dkl")
+	fmt.Println(t)
 	fmt.Println(err)
-	fmt.Println(i)
+
+	i, err := q.Select(storage.Pair{Type: "names", Value: "dkl"})
+	fmt.Println(err)
+	fmt.Println(i.ID)
+	fmt.Println(i.Name)
 
 	// initAll()
 }
