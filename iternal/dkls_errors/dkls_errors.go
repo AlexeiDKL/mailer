@@ -6,7 +6,7 @@ func newError(message string) error {
 	return fmt.Errorf("%s", message)
 }
 
-func NotRelizedError() error {
+func NotRealizedError() error {
 	return newError("Not realized yet")
 }
 

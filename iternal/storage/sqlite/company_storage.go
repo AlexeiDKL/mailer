@@ -60,23 +60,42 @@ func (s CompanyStorages) Select(args storage.Pair) (*Company, error) {
 	default:
 		return nil, dklserrors.UnsupportedType(args.Type)
 	}
+
 	if err != nil {
 		return nil, dklserrors.Wrap(op, err)
 	}
 
-	c := &Company{}
+	company := &Company{}
 
 	result.Next()
 
-	err = result.Scan(&c.ID, &c.Name)
+	err = result.Scan(&company.ID, &company.Name)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("%s: no company found with id: %s", op, id)
+		return nil, fmt.Errorf("%s: no company found with %s: %s", op, args.Type, id)
 	}
-	return c, err
+	return company, err
 }
 
 func (s CompanyStorages) SelectAll() ([]Company, error) {
-	return nil, dklserrors.NotRelizedError()
+	const op = "storage.sqlite.SelectAll"
+	rows, err := s.db.db.Query("SELECT id, name FROM company")
+	if err != nil {
+		return nil, dklserrors.Wrap(op, err)
+	}
+	defer rows.Close()
+	companies := []Company{}
+	for rows.Next() {
+		var c Company
+		err := rows.Scan(&c.ID, &c.Name)
+		if err != nil {
+			return nil, dklserrors.Wrap(op, err)
+		}
+		companies = append(companies, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, dklserrors.Wrap(op, err)
+	}
+	return companies, nil
 }
 
 func (s CompanyStorages) selectWithNames(companyNames string) (*sql.Rows, error) {
@@ -104,12 +123,7 @@ func (s CompanyStorages) Insert(companyName string) (int64, error) {
 		return -2, dklserrors.Wrap(op, err)
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return -3, fmt.Errorf("%s: failed to get last insert id: %w", op, err)
-	}
-
-	return id, nil
+	return res.LastInsertId()
 }
 
 func (s CompanyStorages) Delete(args storage.Pair) error {
@@ -245,23 +259,6 @@ func (s CompanyStorages) updateByName(name, newName string) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("%s: no company found with name %s", op, name)
-	}
-
-	return nil
-}
-
-func (s CompanyStorages) DropTable() error {
-	const op = "storage.sqlite.DropTableCompany"
-
-	stmt, err := s.db.db.Prepare("DROP TABLE if EXISTS company;")
-
-	if err != nil {
-		return dklserrors.Wrap(op, err)
-	}
-
-	_, err = stmt.Exec()
-	if err != nil {
-		return dklserrors.Wrap(op, err)
 	}
 
 	return nil
