@@ -19,11 +19,11 @@ type DomensStorage struct {
 	db *Storage
 }
 
-func CreatedomensStorages(db *Storage) *DomensStorage {
+func CreateDomensStorages(db *Storage) *DomensStorage {
 	return &DomensStorage{db: db}
 }
 
-func CreatedomensTable(storagePath string) (*Storage, error) {
+func CreateDomensTable(storagePath string) (*Storage, error) {
 	const op = "storage.sqlite.CreatedomensTable"
 
 	db, err := sql.Open("sqlite3", storagePath)
@@ -51,7 +51,7 @@ func CreatedomensTable(storagePath string) (*Storage, error) {
 }
 
 func (s DomensStorage) Select(args storage.Pair) (*Domens, error) {
-	op := "storage.sqlite.select"
+	const op = "storage.sqlite.select"
 	var result *sql.Rows
 	var err error
 	switch args.Type {
