@@ -30,6 +30,7 @@ func CreateDomensTable(storagePath string) (*Storage, error) {
 	if err != nil {
 		return nil, dklserrors.Wrap(op, err)
 	}
+	defer db.Close()
 	stmt, err := db.Prepare(`
 		CREATE TABLE IF NOT EXISTS domens (
 			id integer primary key NOT NULL UNIQUE,
@@ -167,6 +168,8 @@ func (s DomensStorage) deleteById(id int) error {
 	if err != nil {
 		return dklserrors.Wrap(op, err)
 	}
+	defer stmt.Close()
+
 	_, err = stmt.Exec(id)
 	if err != nil {
 		return dklserrors.Wrap(op, err)
