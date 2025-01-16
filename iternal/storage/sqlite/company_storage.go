@@ -76,6 +76,18 @@ func (s CompanyStorages) Select(args storage.Pair) (*Company, error) {
 	return company, err
 }
 
+func (s CompanyStorages) selectWithNames(companyNames string) (*sql.Rows, error) {
+	const op = "storage.sqlite.SelectWithNames"
+
+	return s.db.db.Query("SELECT id, name FROM company WHERE name =?", companyNames)
+}
+
+func (s CompanyStorages) selectWithId(id string) (*sql.Rows, error) {
+	const op = "storage.sqlite.SelectWithId"
+
+	return s.db.db.Query("SELECT id, name FROM company WHERE id =?", id)
+}
+
 func (s CompanyStorages) SelectAll() ([]Company, error) {
 	const op = "storage.sqlite.SelectAll"
 	rows, err := s.db.db.Query("SELECT id, name FROM company")
@@ -97,19 +109,6 @@ func (s CompanyStorages) SelectAll() ([]Company, error) {
 	}
 	return companies, nil
 }
-
-func (s CompanyStorages) selectWithNames(companyNames string) (*sql.Rows, error) {
-	const op = "storage.sqlite.SelectWithNames"
-
-	return s.db.db.Query("SELECT id, name FROM company WHERE name =?", companyNames)
-}
-
-func (s CompanyStorages) selectWithId(id string) (*sql.Rows, error) {
-	const op = "storage.sqlite.SelectWithId"
-
-	return s.db.db.Query("SELECT id, name FROM company WHERE id =?", id)
-}
-
 func (s CompanyStorages) Insert(companyName string) (int64, error) {
 	const op = "storage.sqlite.SaveCompany"
 
@@ -124,6 +123,68 @@ func (s CompanyStorages) Insert(companyName string) (int64, error) {
 	}
 
 	return res.LastInsertId()
+}
+
+func (s CompanyStorages) Update(arg storage.Pair) error {
+	const op = "storage.sqlite.UpdateCompany"
+	switch arg.Type {
+	case "id":
+		return s.updateById(arg.Type, arg.Value.(string))
+	case "name":
+		return s.updateByName(arg.Type, arg.Value.(string))
+	default:
+		return fmt.Errorf("unsupported type: %s", arg.Type)
+	}
+}
+
+func (s CompanyStorages) updateById(id, newName string) error {
+	const op = "storage.sqlite.UpdateById"
+
+	stmt, err := s.db.db.Prepare("UPDATE company SET name =? WHERE id =?")
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+
+	res, err := stmt.Exec(newName, id)
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("%s: no company found with id %s", op, id)
+	}
+
+	return nil
+}
+
+func (s CompanyStorages) updateByName(name, newName string) error {
+	const op = "storage.sqlite.UpdateByName"
+
+	stmt, err := s.db.db.Prepare("UPDATE company SET name =? WHERE name =?")
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+
+	res, err := stmt.Exec(newName, name)
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("%s: no company found with name %s", op, name)
+	}
+
+	return nil
 }
 
 func (s CompanyStorages) Delete(args storage.Pair) error {
@@ -199,67 +260,5 @@ func (s CompanyStorages) Drop() error {
 	if err != nil {
 		return dklserrors.Wrap(op, err)
 	}
-	return nil
-}
-
-func (s CompanyStorages) Update(arg storage.Pair) error {
-	const op = "storage.sqlite.UpdateCompany"
-	switch arg.Type {
-	case "id":
-		return s.updateById(arg.Type, arg.Value.(string))
-	case "name":
-		return s.updateByName(arg.Type, arg.Value.(string))
-	default:
-		return fmt.Errorf("unsupported type: %s", arg.Type)
-	}
-}
-
-func (s CompanyStorages) updateById(id, newName string) error {
-	const op = "storage.sqlite.UpdateById"
-
-	stmt, err := s.db.db.Prepare("UPDATE company SET name =? WHERE id =?")
-	if err != nil {
-		return dklserrors.Wrap(op, err)
-	}
-
-	res, err := stmt.Exec(newName, id)
-	if err != nil {
-		return dklserrors.Wrap(op, err)
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("%s: no company found with id %s", op, id)
-	}
-
-	return nil
-}
-
-func (s CompanyStorages) updateByName(name, newName string) error {
-	const op = "storage.sqlite.UpdateByName"
-
-	stmt, err := s.db.db.Prepare("UPDATE company SET name =? WHERE name =?")
-	if err != nil {
-		return dklserrors.Wrap(op, err)
-	}
-
-	res, err := stmt.Exec(newName, name)
-	if err != nil {
-		return dklserrors.Wrap(op, err)
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("%s: no company found with name %s", op, name)
-	}
-
 	return nil
 }

@@ -99,6 +99,7 @@ func (s DomensStorage) selectWithCompanyID(companyID int) (*sql.Rows, error) {
 
 	return s.db.db.Query("SELECT * FROM domens WHERE id = ?", companyID)
 }
+
 func (s DomensStorage) SelectAll() ([]Domens, error) {
 	const op = "storage.sqlite.selectAll"
 

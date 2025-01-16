@@ -83,3 +83,74 @@ func (s *MailsStorages) selectWithUser(user_id int) (*sql.Rows, error) {
 	const op = "storage.sqlite.SelectWithUser"
 	return s.db.db.Query("SELECT * FROM mails WHERE user =?", user_id)
 }
+
+func (s *MailsStorages) SelectAll() ([]Mails, error) {
+	const op = "storage.sqlite.SelectAll"
+	rows, err := s.db.db.Query("SELECT * FROM mails")
+	if err != nil {
+		return nil, dklserrors.Wrap(op, err)
+	}
+	defer rows.Close()
+	mails := []Mails{}
+	for rows.Next() {
+		mail := &Mails{}
+		err := rows.Scan(&mail.ID, &mail.User, &mail.Body, &mail.Sending)
+		if err != nil {
+			return nil, dklserrors.Wrap(op, err)
+		}
+		mails = append(mails, *mail)
+	}
+	return mails, nil
+}
+
+func (s *MailsStorages) Insert(mail *Mails) error {
+	const op = "storage.sqlite.Insert"
+	stmt, err := s.db.db.Prepare("INSERT INTO mails (id, user, body, sending) VALUES (?,?,?,?)")
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(mail.ID, mail.User, mail.Body, mail.Sending)
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+	return nil
+}
+
+func (s *MailsStorages) Update(mail *Mails) error {
+	const op = "storage.sqlite.Update"
+	stmt, err := s.db.db.Prepare("UPDATE mails SET user=?, body=?, sending=? WHERE id=?")
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(mail.User, mail.Body, mail.Sending, mail.ID)
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+	return nil
+}
+
+func (s *MailsStorages) Delete(id int) error {
+	const op = "storage.sqlite.Delete"
+	stmt, err := s.db.db.Prepare("DELETE FROM mails WHERE id=?")
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+	return nil
+}
+
+func (s *MailsStorages) Drop() error {
+	const op = "storage.sqlite.Drop"
+
+	_, err := s.db.db.Exec("DROP TABLE IF EXISTS mails")
+	if err != nil {
+		return dklserrors.Wrap(op, err)
+	}
+	return nil
+}
