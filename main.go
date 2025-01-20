@@ -36,6 +36,7 @@ func initAll() {
 }
 
 func main() {
+
 	initAll()
 }
 

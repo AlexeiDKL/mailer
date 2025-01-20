@@ -9,13 +9,13 @@ type Storage struct {
 }
 
 const (
-	id          = "id"
-	name        = "name"
+	Id          = "id"
+	Name        = "name"
 	description = "description"
-	email       = "email"
-	phone       = "phone"
-	address     = "address"
-	created_at  = "created_at"
+	Email       = "email"
+	Phone       = "phone"
+	Address     = "address"
+	Created_at  = "created_at"
 )
 
 type Tables interface {

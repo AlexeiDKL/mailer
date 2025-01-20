@@ -19,10 +19,6 @@ type CompanyStorages struct {
 	db *Storage
 }
 
-func CreateCompanyStorages(db *Storage) *CompanyStorages {
-	return &CompanyStorages{db: db}
-}
-
 func CreateCompanyTable(storagePath string) (*Storage, error) {
 	const op = "storage.sqlite.CreateCompanyTable"
 
@@ -48,14 +44,18 @@ func CreateCompanyTable(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
+func CreateCompanyStorages(db *Storage) *CompanyStorages {
+	return &CompanyStorages{db: db}
+}
+
 func (s CompanyStorages) Select(args storage.Pair) (*Company, error) {
 	op := "storage.sqlite.select"
 	var result *sql.Rows
 	var err error
 	switch args.Type {
-	case "id":
+	case Id:
 		result, err = s.selectWithId(args.Value.(string))
-	case "names":
+	case Name:
 		result, err = s.selectWithNames(args.Value.(string))
 	default:
 		return nil, dklserrors.UnsupportedType(args.Type)
@@ -71,7 +71,7 @@ func (s CompanyStorages) Select(args storage.Pair) (*Company, error) {
 
 	err = result.Scan(&company.ID, &company.Name)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("%s: no company found with %s: %s", op, args.Type, id)
+		return nil, fmt.Errorf("%s: no company found with %s: %s", op, args.Type, Id)
 	}
 	return company, err
 }
@@ -125,15 +125,15 @@ func (s CompanyStorages) Insert(companyName string) (int64, error) {
 	return res.LastInsertId()
 }
 
-func (s CompanyStorages) Update(arg storage.Pair) error {
+func (s CompanyStorages) Update(arg storage.Pair, newValue string) error {
 	const op = "storage.sqlite.UpdateCompany"
 	switch arg.Type {
-	case "id":
-		return s.updateById(arg.Type, arg.Value.(string))
-	case "name":
-		return s.updateByName(arg.Type, arg.Value.(string))
+	case Id:
+		return s.updateById(arg.Value.(string), newValue)
+	case Name:
+		return s.updateByName(arg.Value.(string), newValue)
 	default:
-		return fmt.Errorf("unsupported type: %s", arg.Type)
+		return fmt.Errorf("unsupported type: %s in %s", arg.Type, op)
 	}
 }
 
@@ -190,9 +190,9 @@ func (s CompanyStorages) updateByName(name, newName string) error {
 func (s CompanyStorages) Delete(args storage.Pair) error {
 	const os = "storage.sqlite.Delete"
 	switch args.Type {
-	case id:
+	case Id:
 		return s.deleteById(args.Value.(string))
-	case name:
+	case Name:
 		return s.deleteByNames(args.Value.(string))
 	default:
 		return fmt.Errorf("unsupported type: %s", args.Type)
